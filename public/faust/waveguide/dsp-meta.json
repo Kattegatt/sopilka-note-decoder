@@ -1,0 +1,703 @@
+{
+    "name": "Sopilka Waveguide Flute",
+    "filename": "faust-waveguide-flute",
+    "version": "2.86.2",
+    "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2",
+    "library_list": [
+        "/usr/share/faust/instruments.lib",
+        "/usr/share/faust/envelopes.lib",
+        "/usr/share/faust/maths.lib",
+        "/usr/share/faust/platform.lib",
+        "/usr/share/faust/signals.lib",
+        "/usr/share/faust/noises.lib",
+        "/usr/share/faust/oscillators.lib",
+        "/usr/share/faust/basics.lib",
+        "/usr/share/faust/delays.lib",
+        "/usr/share/faust/filters.lib",
+        "/usr/share/faust/reverbs.lib",
+        "/usr/share/faust/routes.lib"
+    ],
+    "include_pathnames": [
+        "/faust/user/inc0",
+        "/share/faust",
+        "/usr/local/share/faust",
+        "/usr/share/faust",
+        "."
+    ],
+    "size": 1221552,
+    "code": "YLiQAaTNBg==",
+    "inputs": 0,
+    "outputs": 2,
+    "meta": [
+        {
+            "author": "Romain Michon (rmichon@ccrma.stanford.edu), adapted for Sopilka Note Decoder"
+        },
+        {
+            "basics.lib/name": "Faust Basic Element Library"
+        },
+        {
+            "basics.lib/version": "1.23.0"
+        },
+        {
+            "compile_options": "-lang wasm-i -fpga-mem-th 4 -ct 1 -es 1 -mcd 16 -mdd 1024 -mdy 33 -single -ftz 2"
+        },
+        {
+            "copyright": "Romain Michon"
+        },
+        {
+            "delays.lib/name": "Faust Delay Library"
+        },
+        {
+            "delays.lib/version": "1.2.0"
+        },
+        {
+            "description": "Nonlinear waveguide flute, adapted as a folk-pipe comparison model"
+        },
+        {
+            "envelopes.lib/adsr:author": "Yann Orlarey and Andrey Bundin"
+        },
+        {
+            "envelopes.lib/asr:author": "Yann Orlarey, Stéphane Letz"
+        },
+        {
+            "envelopes.lib/author": "GRAME"
+        },
+        {
+            "envelopes.lib/copyright": "GRAME"
+        },
+        {
+            "envelopes.lib/license": "LGPL with exception"
+        },
+        {
+            "envelopes.lib/name": "Faust Envelope Library"
+        },
+        {
+            "envelopes.lib/version": "1.3.0"
+        },
+        {
+            "filename": "faust-waveguide-flute"
+        },
+        {
+            "filters.lib/allpass_comb:author": "Julius O. Smith III"
+        },
+        {
+            "filters.lib/allpass_comb:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+        },
+        {
+            "filters.lib/allpass_comb:license": "MIT-style STK-4.3 license"
+        },
+        {
+            "filters.lib/allpassnn:author": "Julius O. Smith III"
+        },
+        {
+            "filters.lib/allpassnn:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+        },
+        {
+            "filters.lib/allpassnn:license": "MIT-style STK-4.3 license"
+        },
+        {
+            "filters.lib/lowpass0_highpass1": "MIT-style STK-4.3 license"
+        },
+        {
+            "filters.lib/lowpass0_highpass1:author": "Julius O. Smith III"
+        },
+        {
+            "filters.lib/lowpass:author": "Julius O. Smith III"
+        },
+        {
+            "filters.lib/lowpass:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+        },
+        {
+            "filters.lib/lowpass:license": "MIT-style STK-4.3 license"
+        },
+        {
+            "filters.lib/name": "Faust Filters Library"
+        },
+        {
+            "filters.lib/tf1:author": "Julius O. Smith III"
+        },
+        {
+            "filters.lib/tf1:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+        },
+        {
+            "filters.lib/tf1:license": "MIT-style STK-4.3 license"
+        },
+        {
+            "filters.lib/tf1s:author": "Julius O. Smith III"
+        },
+        {
+            "filters.lib/tf1s:copyright": "Copyright (C) 2003-2019 by Julius O. Smith III <jos@ccrma.stanford.edu>"
+        },
+        {
+            "filters.lib/tf1s:license": "MIT-style STK-4.3 license"
+        },
+        {
+            "filters.lib/version": "1.7.1"
+        },
+        {
+            "instruments.lib/author": "Romain Michon (rmichon@ccrma.stanford.edu)"
+        },
+        {
+            "instruments.lib/copyright": "Romain Michon"
+        },
+        {
+            "instruments.lib/licence": "STK-4.3"
+        },
+        {
+            "instruments.lib/name": "Faust-STK Tools Library"
+        },
+        {
+            "instruments.lib/version": "1.0.0"
+        },
+        {
+            "isInstrument": "true"
+        },
+        {
+            "licence": "STK-4.3"
+        },
+        {
+            "maths.lib/author": "GRAME"
+        },
+        {
+            "maths.lib/copyright": "GRAME"
+        },
+        {
+            "maths.lib/license": "LGPL with exception"
+        },
+        {
+            "maths.lib/name": "Faust Math Library"
+        },
+        {
+            "maths.lib/version": "2.9.0"
+        },
+        {
+            "name": "Sopilka Waveguide Flute"
+        },
+        {
+            "noises.lib/name": "Faust Noise Generator Library"
+        },
+        {
+            "noises.lib/version": "1.5.0"
+        },
+        {
+            "oscillators.lib/name": "Faust Oscillator Library"
+        },
+        {
+            "oscillators.lib/version": "1.7.0"
+        },
+        {
+            "platform.lib/name": "Generic Platform Library"
+        },
+        {
+            "platform.lib/version": "1.3.0"
+        },
+        {
+            "reverbs.lib/name": "Faust Reverb Library"
+        },
+        {
+            "reverbs.lib/version": "1.5.1"
+        },
+        {
+            "routes.lib/hadamard:author": "Remy Muller, revised by Romain Michon"
+        },
+        {
+            "routes.lib/name": "Faust Signal Routing Library"
+        },
+        {
+            "routes.lib/version": "1.3.0"
+        },
+        {
+            "signals.lib/name": "Faust Routing Library"
+        },
+        {
+            "signals.lib/version": "1.6.0"
+        },
+        {
+            "version": "1.0"
+        }
+    ],
+    "ui": [
+        {
+            "type": "vgroup",
+            "label": "Sopilka Waveguide Flute",
+            "items": [
+                {
+                    "type": "hgroup",
+                    "label": "Basic_Parameters",
+                    "items": [
+                        {
+                            "type": "nentry",
+                            "label": "freq",
+                            "varname": "fEntry1",
+                            "shortname": "freq",
+                            "address": "/Sopilka_Waveguide_Flute/Basic_Parameters/freq",
+                            "index": 393340,
+                            "meta": [
+                                {
+                                    "1": ""
+                                },
+                                {
+                                    "unit": "Hz"
+                                }
+                            ],
+                            "init": 440,
+                            "min": 20,
+                            "max": 20000,
+                            "step": 1
+                        },
+                        {
+                            "type": "nentry",
+                            "label": "gain",
+                            "varname": "fEntry0",
+                            "shortname": "gain",
+                            "address": "/Sopilka_Waveguide_Flute/Basic_Parameters/gain",
+                            "index": 393320,
+                            "meta": [
+                                {
+                                    "1": ""
+                                }
+                            ],
+                            "init": 1,
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.01
+                        },
+                        {
+                            "type": "button",
+                            "label": "gate",
+                            "varname": "fButton0",
+                            "shortname": "gate",
+                            "address": "/Sopilka_Waveguide_Flute/Basic_Parameters/gate",
+                            "index": 393360,
+                            "meta": [
+                                {
+                                    "1": ""
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "hgroup",
+                    "label": "Envelopes_and_Vibrato",
+                    "items": [
+                        {
+                            "type": "vgroup",
+                            "label": "Global_Envelope_Parameters",
+                            "items": [
+                                {
+                                    "type": "hslider",
+                                    "label": "Glob_Env_Attack",
+                                    "varname": "fHslider16",
+                                    "shortname": "Glob_Env_Attack",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Global_Envelope_Parameters/Glob_Env_Attack",
+                                    "index": 459192,
+                                    "meta": [
+                                        {
+                                            "6": ""
+                                        },
+                                        {
+                                            "unit": "s"
+                                        }
+                                    ],
+                                    "init": 0.1,
+                                    "min": 0,
+                                    "max": 2,
+                                    "step": 0.01
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Glob_Env_Release",
+                                    "varname": "fHslider17",
+                                    "shortname": "Glob_Env_Release",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Global_Envelope_Parameters/Glob_Env_Release",
+                                    "index": 459196,
+                                    "meta": [
+                                        {
+                                            "6": ""
+                                        },
+                                        {
+                                            "unit": "s"
+                                        }
+                                    ],
+                                    "init": 0.1,
+                                    "min": 0,
+                                    "max": 2,
+                                    "step": 0.01
+                                }
+                            ]
+                        },
+                        {
+                            "type": "vgroup",
+                            "label": "Pressure_Envelope_Parameters",
+                            "items": [
+                                {
+                                    "type": "hslider",
+                                    "label": "Press_Env_Attack",
+                                    "varname": "fHslider4",
+                                    "shortname": "Press_Env_Attack",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Pressure_Envelope_Parameters/Press_Env_Attack",
+                                    "index": 393356,
+                                    "meta": [
+                                        {
+                                            "5": ""
+                                        },
+                                        {
+                                            "unit": "s"
+                                        }
+                                    ],
+                                    "init": 0.05,
+                                    "min": 0,
+                                    "max": 2,
+                                    "step": 0.01
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Press_Env_Decay",
+                                    "varname": "fHslider5",
+                                    "shortname": "Press_Env_Decay",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Pressure_Envelope_Parameters/Press_Env_Decay",
+                                    "index": 393392,
+                                    "meta": [
+                                        {
+                                            "5": ""
+                                        },
+                                        {
+                                            "unit": "s"
+                                        }
+                                    ],
+                                    "init": 0.2,
+                                    "min": 0,
+                                    "max": 2,
+                                    "step": 0.01
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Press_Env_Release",
+                                    "varname": "fHslider6",
+                                    "shortname": "Press_Env_Release",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Pressure_Envelope_Parameters/Press_Env_Release",
+                                    "index": 393396,
+                                    "meta": [
+                                        {
+                                            "5": ""
+                                        },
+                                        {
+                                            "unit": "s"
+                                        }
+                                    ],
+                                    "init": 1,
+                                    "min": 0,
+                                    "max": 2,
+                                    "step": 0.01
+                                },
+                                {
+                                    "type": "checkbox",
+                                    "label": "Pressure_Env",
+                                    "varname": "fCheckbox0",
+                                    "shortname": "Pressure_Env",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Pressure_Envelope_Parameters/Pressure_Env",
+                                    "index": 393372,
+                                    "meta": [
+                                        {
+                                            "5": ""
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "type": "vgroup",
+                            "label": "Vibrato_Parameters",
+                            "items": [
+                                {
+                                    "type": "hslider",
+                                    "label": "Vibrato_Attack",
+                                    "varname": "fHslider9",
+                                    "shortname": "Vibrato_Attack",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Vibrato_Parameters/Vibrato_Attack",
+                                    "index": 393440,
+                                    "meta": [
+                                        {
+                                            "4": ""
+                                        },
+                                        {
+                                            "unit": "s"
+                                        }
+                                    ],
+                                    "init": 0.5,
+                                    "min": 0,
+                                    "max": 2,
+                                    "step": 0.01
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Vibrato_Begin",
+                                    "varname": "fHslider10",
+                                    "shortname": "Vibrato_Begin",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Vibrato_Parameters/Vibrato_Begin",
+                                    "index": 393444,
+                                    "meta": [
+                                        {
+                                            "4": ""
+                                        },
+                                        {
+                                            "unit": "s"
+                                        }
+                                    ],
+                                    "init": 0.1,
+                                    "min": 0,
+                                    "max": 2,
+                                    "step": 0.01
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Vibrato_Freq",
+                                    "varname": "fHslider12",
+                                    "shortname": "Vibrato_Freq",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Vibrato_Parameters/Vibrato_Freq",
+                                    "index": 393464,
+                                    "meta": [
+                                        {
+                                            "4": ""
+                                        },
+                                        {
+                                            "unit": "Hz"
+                                        }
+                                    ],
+                                    "init": 5,
+                                    "min": 1,
+                                    "max": 15,
+                                    "step": 0.1
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Vibrato_Gain",
+                                    "varname": "fHslider8",
+                                    "shortname": "Vibrato_Gain",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Vibrato_Parameters/Vibrato_Gain",
+                                    "index": 393420,
+                                    "meta": [
+                                        {
+                                            "4": ""
+                                        }
+                                    ],
+                                    "init": 0.1,
+                                    "min": 0,
+                                    "max": 1,
+                                    "step": 0.01
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Vibrato_Release",
+                                    "varname": "fHslider11",
+                                    "shortname": "Vibrato_Release",
+                                    "address": "/Sopilka_Waveguide_Flute/Envelopes_and_Vibrato/Vibrato_Parameters/Vibrato_Release",
+                                    "index": 393448,
+                                    "meta": [
+                                        {
+                                            "4": ""
+                                        },
+                                        {
+                                            "unit": "s"
+                                        }
+                                    ],
+                                    "init": 0.2,
+                                    "min": 0,
+                                    "max": 2,
+                                    "step": 0.01
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "hgroup",
+                    "label": "Physical_and_Nonlinearity",
+                    "items": [
+                        {
+                            "type": "vgroup",
+                            "label": "Nonlinear_Filter_Parameters",
+                            "items": [
+                                {
+                                    "type": "hslider",
+                                    "label": "Modulation_Frequency",
+                                    "varname": "fHslider14",
+                                    "shortname": "Modulation_Frequency",
+                                    "address": "/Sopilka_Waveguide_Flute/Physical_and_Nonlinearity/Nonlinear_Filter_Parameters/Modulation_Frequency",
+                                    "index": 393500,
+                                    "meta": [
+                                        {
+                                            "3": ""
+                                        },
+                                        {
+                                            "unit": "Hz"
+                                        }
+                                    ],
+                                    "init": 220,
+                                    "min": 20,
+                                    "max": 1000,
+                                    "step": 0.1
+                                },
+                                {
+                                    "type": "nentry",
+                                    "label": "Modulation_Type",
+                                    "varname": "fEntry2",
+                                    "shortname": "Modulation_Type",
+                                    "address": "/Sopilka_Waveguide_Flute/Physical_and_Nonlinearity/Nonlinear_Filter_Parameters/Modulation_Type",
+                                    "index": 393476,
+                                    "meta": [
+                                        {
+                                            "3": ""
+                                        }
+                                    ],
+                                    "init": 0,
+                                    "min": 0,
+                                    "max": 4,
+                                    "step": 1
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Nonlinearity",
+                                    "varname": "fHslider13",
+                                    "shortname": "Nonlinearity",
+                                    "address": "/Sopilka_Waveguide_Flute/Physical_and_Nonlinearity/Nonlinear_Filter_Parameters/Nonlinearity",
+                                    "index": 393488,
+                                    "meta": [
+                                        {
+                                            "3": ""
+                                        }
+                                    ],
+                                    "init": 0,
+                                    "min": 0,
+                                    "max": 1,
+                                    "step": 0.01
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Nonlinearity_Attack",
+                                    "varname": "fHslider15",
+                                    "shortname": "Nonlinearity_Attack",
+                                    "address": "/Sopilka_Waveguide_Flute/Physical_and_Nonlinearity/Nonlinear_Filter_Parameters/Nonlinearity_Attack",
+                                    "index": 393520,
+                                    "meta": [
+                                        {
+                                            "3": ""
+                                        },
+                                        {
+                                            "unit": "s"
+                                        }
+                                    ],
+                                    "init": 0.1,
+                                    "min": 0,
+                                    "max": 2,
+                                    "step": 0.01
+                                }
+                            ]
+                        },
+                        {
+                            "type": "vgroup",
+                            "label": "Physical_Parameters",
+                            "items": [
+                                {
+                                    "type": "hslider",
+                                    "label": "Noise_Gain",
+                                    "varname": "fHslider7",
+                                    "shortname": "Noise_Gain",
+                                    "address": "/Sopilka_Waveguide_Flute/Physical_and_Nonlinearity/Physical_Parameters/Noise_Gain",
+                                    "index": 393408,
+                                    "meta": [
+                                        {
+                                            "2": ""
+                                        }
+                                    ],
+                                    "init": 0.1,
+                                    "min": 0,
+                                    "max": 1,
+                                    "step": 0.01
+                                },
+                                {
+                                    "type": "hslider",
+                                    "label": "Pressure",
+                                    "varname": "fHslider3",
+                                    "shortname": "Pressure",
+                                    "address": "/Sopilka_Waveguide_Flute/Physical_and_Nonlinearity/Physical_Parameters/Pressure",
+                                    "index": 393344,
+                                    "meta": [
+                                        {
+                                            "2": ""
+                                        }
+                                    ],
+                                    "init": 0.9,
+                                    "min": 0,
+                                    "max": 1.5,
+                                    "step": 0.01
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "vgroup",
+                    "label": "Reverb",
+                    "items": [
+                        {
+                            "type": "hslider",
+                            "label": "reverbGain",
+                            "varname": "fHslider2",
+                            "shortname": "reverbGain",
+                            "address": "/Sopilka_Waveguide_Flute/Reverb/reverbGain",
+                            "index": 393304,
+                            "init": 0.137,
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.01
+                        },
+                        {
+                            "type": "hslider",
+                            "label": "roomSize",
+                            "varname": "fHslider0",
+                            "shortname": "roomSize",
+                            "address": "/Sopilka_Waveguide_Flute/Reverb/roomSize",
+                            "index": 262172,
+                            "init": 0.72,
+                            "min": 0.01,
+                            "max": 2,
+                            "step": 0.01
+                        }
+                    ]
+                },
+                {
+                    "type": "vgroup",
+                    "label": "Spat",
+                    "items": [
+                        {
+                            "type": "hslider",
+                            "label": "pan angle",
+                            "varname": "fHslider1",
+                            "shortname": "pan_angle",
+                            "address": "/Sopilka_Waveguide_Flute/Spat/pan_angle",
+                            "index": 393296,
+                            "init": 0.6,
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.01
+                        },
+                        {
+                            "type": "hslider",
+                            "label": "spatial width",
+                            "varname": "fHslider18",
+                            "shortname": "spatial_width",
+                            "address": "/Sopilka_Waveguide_Flute/Spat/spatial_width",
+                            "index": 491968,
+                            "init": 0.5,
+                            "min": 0,
+                            "max": 1,
+                            "step": 0.01
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

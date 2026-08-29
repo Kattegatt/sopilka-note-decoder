@@ -1,0 +1,14 @@
+{
+  "name": "Візуалізатор аплікатур хроматичної сопілки",
+  "short_name": "Сопілка",
+  "description": "Ноти, ритм і наочні аплікатури для української хроматичної сопілки.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3eee7",
+  "theme_color": "#b3212e",
+  "lang": "uk",
+  "icons": [
+    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
