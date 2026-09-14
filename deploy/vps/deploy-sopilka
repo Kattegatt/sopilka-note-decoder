@@ -1,0 +1,66 @@
+#!/bin/sh
+set -eu
+
+sha=${1:-}
+actor=${2:-manual}
+app_dir=/srv/apps/sopilka
+image="ghcr.io/kattegatt/sopilka-note-decoder:${sha}"
+
+case "$sha" in
+  *[!0-9a-f]*|'') echo "A full lowercase Git commit SHA is required." >&2; exit 2 ;;
+esac
+[ "${#sha}" -eq 40 ] || { echo "A 40-character Git commit SHA is required." >&2; exit 2; }
+
+next_env=$(mktemp "$app_dir/.image.next.XXXXXX")
+docker_config=$(mktemp -d)
+trap 'rm -f "$next_env"; rm -rf "$docker_config"' EXIT
+export DOCKER_CONFIG="$docker_config"
+
+printf 'SOPILKA_IMAGE=%s\n' "$image" > "$next_env"
+chmod 600 "$next_env"
+
+if [ "$actor" != manual ]; then
+  case "$actor" in
+    *[!A-Za-z0-9-]*|'') echo "Invalid GitHub actor." >&2; exit 2 ;;
+  esac
+  docker login ghcr.io --username "$actor" --password-stdin >/dev/null
+fi
+
+if ! docker image inspect "$image" >/dev/null 2>&1; then
+  docker pull "$image"
+fi
+
+docker compose --project-directory "$app_dir" --env-file "$next_env" up -d --remove-orphans
+
+container_id=$(docker compose --project-directory "$app_dir" --env-file "$next_env" ps -q app)
+[ -n "$container_id" ] || { echo "Application container was not created." >&2; exit 1; }
+
+attempt=0
+while [ "$attempt" -lt 30 ]; do
+  health=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$container_id")
+  [ "$health" = healthy ] && break
+  [ "$health" = unhealthy ] && break
+  attempt=$((attempt + 1))
+  sleep 2
+done
+
+if [ "${health:-unknown}" != healthy ]; then
+  echo "New container did not become healthy (status: ${health:-unknown})." >&2
+  if [ -f "$app_dir/.image" ]; then
+    echo "Restoring the previously recorded image." >&2
+    docker compose --project-directory "$app_dir" --env-file "$app_dir/.image" up -d --remove-orphans
+  fi
+  exit 1
+fi
+
+curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 \
+  https://sopilka.kattegatt.org/ >/dev/null
+
+if [ -f "$app_dir/.image" ]; then
+  cp "$app_dir/.image" "$app_dir/.image.previous"
+  chmod 600 "$app_dir/.image.previous"
+fi
+mv "$next_env" "$app_dir/.image"
+trap 'rm -rf "$docker_config"' EXIT
+
+echo "Deployed $image"

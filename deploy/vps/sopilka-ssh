@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+set -- ${SSH_ORIGINAL_COMMAND:-}
+[ "$#" -eq 3 ] || { echo "Only Sopilka deployments are allowed." >&2; exit 2; }
+[ "$1" = deploy ] || { echo "Only Sopilka deployments are allowed." >&2; exit 2; }
+
+exec sudo /usr/local/sbin/deploy-sopilka "$2" "$3"

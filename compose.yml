@@ -1,0 +1,18 @@
+services:
+  app:
+    image: ${SOPILKA_IMAGE:?Set SOPILKA_IMAGE to an immutable GHCR image tag}
+    restart: unless-stopped
+    networks:
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+      - traefik.http.routers.sopilka.rule=Host(`sopilka.kattegatt.org`)
+      - traefik.http.routers.sopilka.entrypoints=websecure
+      - traefik.http.routers.sopilka.tls=true
+      - traefik.http.routers.sopilka.tls.certresolver=letsencrypt
+      - traefik.http.services.sopilka.loadbalancer.server.port=8080
+
+networks:
+  proxy:
+    external: true

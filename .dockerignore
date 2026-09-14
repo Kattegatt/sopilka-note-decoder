@@ -1,0 +1,16 @@
+.git
+.github
+.DS_Store
+.next
+.vinext
+.wrangler
+dist
+node_modules
+outputs
+work
+*.local.md
+*.pem
+*.tsbuildinfo
+Dockerfile*
+compose*.yml
+docs

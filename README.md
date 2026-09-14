@@ -39,16 +39,11 @@ npm run lint
 
 `npm run build` лише створює production-збірку і не відкриває застосунок.
 
-## GitHub Pages
+## Production
 
-Репозиторій містить workflow `.github/workflows/deploy-pages.yml`. Після зміни
-видимості репозиторію на public відкрийте **Settings → Pages → Build and
-deployment** і виберіть **GitHub Actions**. Кожен push у `main` перевірятиме код,
-створюватиме статичну збірку та публікуватиме її в Pages.
-
-Шлях до репозиторію підставляється автоматично, тому PWA, service worker і
-локальні аудіоресурси працюють і на адресі виду
-`https://<користувач>.github.io/<репозиторій>/`.
+Production-застосунок працює на <https://sopilka.kattegatt.org/>. Push або merge
+у `main` перевіряє код, публікує Docker image у GHCR та автоматично оновлює VPS.
+Інструкції з експлуатації та відкату: [`docs/deployment.md`](docs/deployment.md).
 
 Локальні конфіги AI-асистентів, приватні нотатки, промпти, плани та конфіг
 ChatGPT Sites виключені через `.gitignore` і не потрібні для збірки.

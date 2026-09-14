@@ -1,0 +1,16 @@
+#!/bin/sh
+set -eu
+
+app_dir=/srv/apps/sopilka
+
+echo "Current image:"
+sed -n 's/^SOPILKA_IMAGE=//p' "$app_dir/.image" 2>/dev/null || echo "not deployed"
+echo "Previous image:"
+sed -n 's/^SOPILKA_IMAGE=//p' "$app_dir/.image.previous" 2>/dev/null || echo "not recorded"
+
+if [ -f "$app_dir/.image" ]; then
+  docker compose --project-directory "$app_dir" --env-file "$app_dir/.image" ps
+fi
+
+docker images ghcr.io/kattegatt/sopilka-note-decoder \
+  --format 'table {{.Repository}}:{{.Tag}}\t{{.ID}}\t{{.CreatedSince}}'
