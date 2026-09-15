@@ -23,6 +23,14 @@ type Toolkit = {
 
 let modulePromise: Promise<unknown> | null = null;
 
+// Keep horizontal distance tied to elapsed musical time. At 1.0 Verovio uses
+// proportional duration spacing; the smaller linear factor keeps the score at
+// roughly the same density as the previous, compressed layout.
+export const RHYTHMIC_SPACING_OPTIONS = {
+  spacingLinear: 0.03,
+  spacingNonLinear: 1,
+} as const;
+
 async function makeToolkit(): Promise<Toolkit> {
   modulePromise ??= import("verovio/wasm").then((module) => module.default());
   const [verovioModule, toolkitModule] = await Promise.all([modulePromise, import("verovio/esm")]);
@@ -262,8 +270,7 @@ export async function renderProjectScore(project: Project, pageWidth = 1450): Pr
       scale: 42,
       breaks: "auto",
       spacingSystem: 12,
-      spacingLinear: 0.7,
-      spacingNonLinear: 0.45,
+      ...RHYTHMIC_SPACING_OPTIONS,
       adjustPageHeight: true,
       pageMarginTop: 35,
       pageMarginBottom: 35,

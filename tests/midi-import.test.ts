@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Midi } from "@tonejs/midi";
 import { midiBytesToMusicXml } from "../app/midi-import";
+import { RHYTHMIC_SPACING_OPTIONS } from "../app/music";
 import { buildPlaybackTimings } from "../app/timeline";
 import { buildMetronomeClicks } from "../app/usePlayback";
 
@@ -106,6 +107,44 @@ describe("MIDI import", () => {
       toolkit.setOptions({ inputFrom: "xml" });
       expect(toolkit.loadData(midiBytesToMusicXml(exampleMidi(), "example.mid").musicXml)).toBeTruthy();
       expect(toolkit.getMEI()).toContain("<note");
+    } finally {
+      toolkit.destroy();
+    }
+  });
+
+  it("renders rests with spacing proportional to their duration", async () => {
+    const [{ default: createVerovioModule }, { VerovioToolkit }] = await Promise.all([
+      import("verovio/wasm"),
+      import("verovio/esm"),
+    ]);
+    const wasmModule = await createVerovioModule();
+    const toolkit = new VerovioToolkit(wasmModule) as unknown as {
+      setOptions(options: Record<string, unknown>): void;
+      loadData(data: string): boolean | number;
+      renderToSVG(page: number): string;
+      destroy(): void;
+    };
+    try {
+      toolkit.setOptions({
+        inputFrom: "abc",
+        breaks: "none",
+        noJustification: true,
+        pageWidth: 8000,
+        scale: 42,
+        ...RHYTHMIC_SPACING_OPTIONS,
+      });
+      expect(toolkit.loadData("X:1\nM:4/4\nL:1/4\nK:C\nC z D z | C z2 D |]")).toBeTruthy();
+
+      const events = [...toolkit.renderToSVG(1).matchAll(
+        /class="(note|rest)">[\s\S]*?<use[^>]+translate\((\d+)/g,
+      )].map((match) => ({ type: match[1], x: Number(match[2]) }));
+      expect(events.map((event) => event.type)).toEqual([
+        "note", "rest", "note", "rest", "note", "rest", "note",
+      ]);
+
+      const quarterRestWidth = events[2].x - events[1].x;
+      const halfRestWidth = events[6].x - events[5].x;
+      expect(halfRestWidth / quarterRestWidth).toBeCloseTo(2, 1);
     } finally {
       toolkit.destroy();
     }
