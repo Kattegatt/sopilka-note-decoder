@@ -4,53 +4,47 @@ import { createProject } from "../app/project";
 
 let f: Awaited<ReturnType<typeof fixture>>;
 beforeEach(async () => { f = await fixture(); });
-afterEach(async () => { await f.app.close(); });
+afterEach(async () => { await f.close(); });
 
-describe("email authentication", () => {
-  it("requires email verification, allows login, resending and revokes logout sessions", async () => {
-    await f.register();
-    const denied = await f.app.inject({ method: "POST", url: "/api/auth/sign-in/email", headers: f.headers,
-      payload: { email: "music@example.com", password: "strong-password-123" } });
-    expect(denied.statusCode).toBe(403);
-    const resent = await f.app.inject({ method: "POST", url: "/api/auth/send-verification-email", headers: f.headers,
-      payload: { email: "music@example.com", callbackURL: "/" } });
-    expect(resent.statusCode).toBe(200);
-    expect(f.mails.filter((mail) => mail.kind === "verification")).toHaveLength(2);
-    await f.verify();
-    const cookie = await f.login();
+describe("login and password authentication without email", () => {
+  it("signs up immediately, stores a password hash and revokes logout sessions", async () => {
+    const cookie = await f.register();
+    const hash = f.passwordHash("music");
+    expect(hash).not.toBe("strong-password-123");
+    expect(hash).toMatch(/^[a-f0-9]+:[a-f0-9]+$/);
     const session = await f.app.inject({ url: "/api/auth/get-session", headers: { cookie } });
-    expect(session.json().user.emailVerified).toBe(true);
+    expect(session.json().user.username).toBe("music");
+    expect(session.json().user.emailVerified).toBe(false);
     expect(session.headers["cache-control"]).toBe("no-store");
+    expect((await f.app.inject({ url: "/api/projects", headers: { cookie } })).statusCode).toBe(200);
+    await expect(f.login("MUSIC")).resolves.toBeTruthy();
+    await expect(f.login("music", "wrong-password")).rejects.toThrow();
     const logout = await f.app.inject({ method: "POST", url: "/api/auth/sign-out", headers: { ...f.headers, cookie }, payload: {} });
     expect(logout.statusCode).toBe(200);
     expect((await f.app.inject({ url: "/api/projects", headers: { cookie } })).statusCode).toBe(401);
   });
 
-  it("resets passwords with an emailed token and revokes previous sessions", async () => {
-    await f.register();
-    await f.verify();
-    const cookie = await f.login();
-    const reset = await f.app.inject({ method: "POST", url: "/api/auth/request-password-reset", headers: f.headers,
-      payload: { email: "music@example.com", redirectTo: "http://localhost:3000/" } });
-    expect(reset.statusCode).toBe(200);
-    const link = new URL(f.mails.findLast((mail) => mail.kind === "reset")!.url);
-    const redirect = await f.app.inject({ url: `${link.pathname}${link.search}`, headers: f.headers });
-    expect(redirect.statusCode).toBe(302);
-    const token = new URL(String(redirect.headers.location)).searchParams.get("token");
-    const changed = await f.app.inject({ method: "POST", url: "/api/auth/reset-password", headers: f.headers,
-      payload: { token, newPassword: "replacement-password-123" } });
-    expect(changed.statusCode).toBe(200);
-    expect((await f.app.inject({ url: "/api/projects", headers: { cookie } })).statusCode).toBe(401);
-    await expect(f.login()).rejects.toThrow();
-    await expect(f.login("music@example.com", "replacement-password-123")).resolves.toBeTruthy();
-    const replay = await f.app.inject({ method: "POST", url: "/api/auth/reset-password", headers: f.headers,
-      payload: { token, newPassword: "another-password-123" } });
-    expect(replay.statusCode).toBe(400);
+  it("validates logins and rejects duplicates without exposing email endpoints", async () => {
+    for (const login of ["ab", "user@example.com", "Козак", "long".repeat(10)]) {
+      const result = await f.app.inject({ method: "POST", url: "/api/auth/register", headers: f.headers,
+        payload: { login, password: "strong-password-123" } });
+      expect(result.statusCode).toBe(400);
+    }
+    const weak = await f.app.inject({ method: "POST", url: "/api/auth/register", headers: f.headers,
+      payload: { login: "music", password: "short" } });
+    expect(weak.statusCode).toBe(400);
+    await f.register("Music");
+    await expect(f.register("music")).rejects.toThrow();
+    await expect(f.register("user..name")).resolves.toBeTruthy();
+    for (const path of ["sign-up/email", "sign-in/email", "send-verification-email", "request-password-reset", "reset-password"]) {
+      const result = await f.app.inject({ method: "POST", url: `/api/auth/${path}`, headers: f.headers, payload: {} });
+      expect(result.statusCode).toBe(404);
+    }
   });
 
   it("rejects foreign origins and reports no store on errors", async () => {
-    const result = await f.app.inject({ method: "POST", url: "/api/auth/sign-up/email", headers: { origin: "https://evil.example" },
-      payload: { email: "x@example.com", password: "strong-password-123", name: "x" } });
+    const result = await f.app.inject({ method: "POST", url: "/api/auth/register", headers: { origin: "https://evil.example" },
+      payload: { login: "music", password: "strong-password-123" } });
     expect(result.statusCode).toBe(403);
     expect(result.headers["cache-control"]).toBe("no-store");
   });
@@ -58,10 +52,8 @@ describe("email authentication", () => {
 
 describe("private project API", () => {
   it("isolates users and orders last writes by server revisions rather than device clocks", async () => {
-    await f.register("a@example.com"); await f.verify("a@example.com");
-    const a = await f.login("a@example.com");
-    await f.register("b@example.com"); await f.verify("b@example.com");
-    const b = await f.login("b@example.com");
+    const a = await f.register("account_a");
+    const b = await f.register("account_b");
     const project = createProject("First");
     const put = (cookie: string, title: string, updatedAt: string, operationId = crypto.randomUUID()) => f.app.inject({
       method: "PUT", url: `/api/projects/${project.id}`, headers: { ...f.headers, cookie },
@@ -83,7 +75,7 @@ describe("private project API", () => {
   });
 
   it("synchronizes tombstones, validates payloads and paginates", async () => {
-    await f.register(); await f.verify(); const cookie = await f.login();
+    const cookie = await f.register();
     const headers = { ...f.headers, cookie };
     const project = createProject();
     const invalid = await f.app.inject({ method: "PUT", url: `/api/projects/${project.id}`, headers,

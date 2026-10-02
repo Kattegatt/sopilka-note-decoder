@@ -130,7 +130,7 @@ button:disabled { cursor:not-allowed; opacity:.45; }
 .sync-status { font-size:11px; color:var(--muted); }
 .sync-status.error,.sync-message,.auth-error { color:#b83232; }
 .sync-message { font-size:11px; max-width:260px; }
-.account-email { font-size:11px; max-width:150px; overflow:hidden; text-overflow:ellipsis; }
+.account-login { font-size:11px; max-width:150px; overflow:hidden; text-overflow:ellipsis; }
 .auth-dialog { width:min(420px,calc(100vw - 32px)); max-height:calc(100vh - 40px); margin:auto; padding:28px; border:1px solid var(--line); border-radius:16px; background:var(--paper); color:var(--ink); }
 .auth-dialog::backdrop { background:rgb(0 0 0 / 40%); }
 .auth-dialog h2 { margin:0 0 12px; }

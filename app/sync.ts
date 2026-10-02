@@ -14,11 +14,11 @@ export async function apiFetch(path: string, init: RequestInit = {}) {
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
     const messages: Record<string, string> = {
-      EMAIL_NOT_VERIFIED: "Підтвердіть email перед входом.",
-      INVALID_EMAIL_OR_PASSWORD: "Неправильний email або пароль.",
-      USER_ALREADY_EXISTS: "Акаунт із цією поштою вже існує.",
-      USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: "Акаунт із цією поштою вже існує.",
-      INVALID_TOKEN: "Посилання недійсне або термін його дії завершився. Запросіть новий лист.",
+      INVALID_EMAIL_OR_PASSWORD: "Неправильний логін або пароль.",
+      INVALID_USERNAME_OR_PASSWORD: "Неправильний логін або пароль.",
+      USER_ALREADY_EXISTS: "Цей логін уже зайнятий.",
+      USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: "Цей логін уже зайнятий.",
+      USERNAME_IS_ALREADY_TAKEN: "Цей логін уже зайнятий.",
     };
     throw new SyncError(response.status, (response.status === 429 ? "Забагато спроб. Спробуйте знову за хвилину." : messages[body.code]) ?? body.error ?? body.message ?? "Не вдалося синхронізувати ноти.");
   }

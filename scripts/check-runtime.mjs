@@ -9,7 +9,7 @@ import Database from "better-sqlite3";
 const directory = await mkdtemp(join(tmpdir(), "sopilka-runtime-"));
 const databasePath = join(directory, "runtime.sqlite");
 const app = await createServer({ databasePath, baseURL: "https://sopilka.example",
-  secret: "runtime-test-secret-at-least-32-characters", staticRoot: resolve("dist"), sendMail: async () => {} });
+  secret: "runtime-test-secret-at-least-32-characters", staticRoot: resolve("dist") });
 try {
   assert.equal((await app.inject("/api/health")).statusCode, 200);
   const index = await app.inject({ url: "/", headers: { accept: "text/html" } });

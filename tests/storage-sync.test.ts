@@ -56,7 +56,7 @@ describe("local-first storage", () => {
   it("retains local data, account identity and queue across reload, including failed logout", async () => {
     const name = crypto.randomUUID();
     const first = device(name); const project = createProject();
-    await first.setAccount({ id: "a", email: "a@example.com" });
+    await first.setAccount({ id: "a", login: "account_a" });
     await first.save("a", project); await first.close(); stores.splice(stores.indexOf(first), 1);
     const reloaded = device(name);
     expect((await reloaded.account())?.id).toBe("a");

@@ -4,26 +4,22 @@ import { createProject } from "../../app/project";
 async function ready(page: Page) {
   await expect(page.getByRole("status").filter({ hasText: /Збережено на пристрої|Синхронізовано|Потрібен вхід|Офлайн/ }).first()).toBeVisible();
 }
-async function register(page: Page, email: string) {
+async function register(page: Page, username: string) {
   await page.getByRole("button", { name: "Увійти / Зареєструватися" }).click();
   await page.getByRole("button", { name: "Створити акаунт" }).click();
-  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Логін", { exact: true }).fill(username);
   await page.getByLabel("Пароль", { exact: true }).fill("strong-password-123");
   await page.getByLabel("Повторіть пароль", { exact: true }).fill("strong-password-123");
   await page.getByRole("button", { name: "Зареєструватися", exact: true }).click();
-  await expect(page.getByRole("dialog")).toContainText("Лист надіслано");
-  const mails = await (await page.request.get("/__test/mails")).json();
-  const url = mails.findLast((mail: { to: string; kind: string }) => mail.to === email && mail.kind === "verification").url;
-  await page.goto(url);
-  await expect(page.getByText(email, { exact: true })).toBeVisible();
+  await expect(page.getByText(username, { exact: true })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Синхронізовано" })).toBeVisible();
 }
-async function login(page: Page, email: string) {
+async function login(page: Page, username: string) {
   await page.getByRole("button", { name: "Увійти / Зареєструватися" }).click();
-  await page.getByLabel("Email", { exact: true }).fill(email);
+  await page.getByLabel("Логін", { exact: true }).fill(username);
   await page.getByLabel("Пароль", { exact: true }).fill("strong-password-123");
   await page.getByRole("dialog").getByRole("button", { name: "Увійти", exact: true }).click();
-  await expect(page.getByText(email, { exact: true })).toBeVisible();
+  await expect(page.getByText(username, { exact: true })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "Синхронізовано" })).toBeVisible();
 }
 async function wake(page: Page) { await page.evaluate(() => window.dispatchEvent(new Event("online"))); }
@@ -62,12 +58,12 @@ test("guest projects survive reload and legacy IndexedDB migration", async ({ pa
 });
 
 test("two devices sync offline edits and deletions; logout isolates account cache", async ({ page, browser }) => {
-  const email = `music-${crypto.randomUUID()}@example.com`;
+  const username = `music_${crypto.randomUUID().slice(0, 20)}`;
   await page.goto("/"); await ready(page);
   await page.getByLabel("Назва проєкту").fill("Мої ноти");
-  await register(page, email);
+  await register(page, username);
   secondContext = await browser.newContext(); const other = await secondContext.newPage();
-  await other.goto("/"); await ready(other); await login(other, email);
+  await other.goto("/"); await ready(other); await login(other, username);
   await other.getByRole("combobox", { name: "Відкрити проєкт" }).selectOption({ label: "Мої ноти" });
   await expect(other.getByLabel("Назва проєкту")).toHaveValue("Мої ноти");
   await secondContext.setOffline(true);
@@ -86,9 +82,9 @@ test("two devices sync offline edits and deletions; logout isolates account cach
   await expect(page.getByRole("combobox", { name: "Відкрити проєкт" })).not.toContainText("Зміни офлайн");
   await page.getByRole("button", { name: "Вийти", exact: true }).click();
   await expect(page.getByRole("button", { name: "Увійти / Зареєструватися" })).toBeVisible();
-  await expect(page.getByText(email, { exact: true })).not.toBeVisible();
+  await expect(page.getByText(username, { exact: true })).not.toBeVisible();
   await page.reload(); await ready(page);
-  await expect(page.getByText(email, { exact: true })).not.toBeVisible();
+  await expect(page.getByText(username, { exact: true })).not.toBeVisible();
   const apiCache = await page.evaluate(async () => {
     const keys = await caches.keys();
     const requests = (await Promise.all(keys.map(async (key) => (await caches.open(key)).keys()))).flat();
@@ -98,17 +94,17 @@ test("two devices sync offline edits and deletions; logout isolates account cach
 });
 
 test("logout in one tab switches other tabs to guest mode", async ({ page, context }) => {
-  const email = `tabs-${crypto.randomUUID()}@example.com`;
-  await page.goto("/"); await ready(page); await register(page, email);
+  const username = `tabs_${crypto.randomUUID().slice(0, 20)}`;
+  await page.goto("/"); await ready(page); await register(page, username);
   const other = await context.newPage(); await other.goto("/");
-  await expect(other.getByText(email, { exact: true })).toBeVisible();
+  await expect(other.getByText(username, { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Вийти", exact: true }).click();
   await expect(other.getByRole("button", { name: "Увійти / Зареєструватися" })).toBeVisible();
-  await expect(other.getByText(email, { exact: true })).not.toBeVisible();
+  await expect(other.getByText(username, { exact: true })).not.toBeVisible();
 });
 
 test("different accounts retain separate offline libraries on the same browser", async ({ page, context }) => {
-  const a = `first-${crypto.randomUUID()}@example.com`, b = `second-${crypto.randomUUID()}@example.com`;
+  const a = `first_${crypto.randomUUID().slice(0, 20)}`, b = `second_${crypto.randomUUID().slice(0, 20)}`;
   await page.goto("/"); await ready(page);
   await page.getByLabel("Назва проєкту").fill("Приватні ноти A"); await register(page, a);
   await page.getByRole("button", { name: "Вийти", exact: true }).click();

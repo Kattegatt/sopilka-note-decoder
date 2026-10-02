@@ -1,31 +1,36 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import Database from "better-sqlite3";
 import { createServer } from "../../server/app";
-import type { AuthMail } from "../../server/auth";
 
 export async function fixture() {
-  const mails: AuthMail[] = [];
-  const app = await createServer({ databasePath: ":memory:", baseURL: "http://localhost:3000",
-    secret: "test-only-32-character-secret-for-sopilka", sendMail: async (mail) => { mails.push(mail); } });
+  const directory = await mkdtemp(join(tmpdir(), "sopilka-auth-test-"));
+  const databasePath = join(directory, "test.sqlite");
+  const app = await createServer({ databasePath, baseURL: "http://localhost:3000",
+    secret: "test-only-32-character-secret-for-sopilka" });
   const headers = { origin: "http://localhost:3000" };
-  async function register(email = "music@example.com", password = "strong-password-123") {
-    const result = await app.inject({ method: "POST", url: "/api/auth/sign-up/email", headers,
-      payload: { email, password, name: "Music", callbackURL: "/" } });
+  function cookies(result: { headers: Record<string, unknown> }) {
+    const values = result.headers["set-cookie"];
+    return (Array.isArray(values) ? values : [values ?? ""]).map((cookie) => String(cookie).split(";")[0]).join("; ");
+  }
+  async function register(login = "music", password = "strong-password-123") {
+    const result = await app.inject({ method: "POST", url: "/api/auth/register", headers, payload: { login, password } });
     if (result.statusCode !== 200) throw new Error(result.body);
-    return result;
+    return cookies(result);
   }
-  async function verify(email = "music@example.com") {
-    const mail = mails.findLast((mail) => mail.to === email && mail.kind === "verification");
-    if (!mail) throw new Error("No verification email");
-    const url = new URL(mail.url);
-    const result = await app.inject({ url: `${url.pathname}${url.search}`, headers });
-    if (result.statusCode !== 302) throw new Error(result.body);
-    const cookies = result.headers["set-cookie"];
-    return (Array.isArray(cookies) ? cookies : [cookies ?? ""]).map((cookie) => cookie.split(";")[0]).join("; ");
-  }
-  async function login(email = "music@example.com", password = "strong-password-123") {
-    const result = await app.inject({ method: "POST", url: "/api/auth/sign-in/email", headers, payload: { email, password } });
+  async function login(username = "music", password = "strong-password-123") {
+    const result = await app.inject({ method: "POST", url: "/api/auth/login", headers, payload: { login: username, password } });
     if (result.statusCode !== 200) throw new Error(result.body);
-    const cookies = result.headers["set-cookie"];
-    return (Array.isArray(cookies) ? cookies : [cookies ?? ""]).map((cookie) => cookie.split(";")[0]).join("; ");
+    return cookies(result);
   }
-  return { app, mails, headers, register, verify, login };
+  function passwordHash(username: string) {
+    const db = new Database(databasePath, { readonly: true });
+    try {
+      return (db.prepare("SELECT a.password FROM account a JOIN user u ON a.userId = u.id WHERE u.username = ?")
+        .get(username) as { password: string }).password;
+    } finally { db.close(); }
+  }
+  async function close() { await app.close(); await rm(directory, { recursive: true, force: true }); }
+  return { app, headers, register, login, passwordHash, close };
 }

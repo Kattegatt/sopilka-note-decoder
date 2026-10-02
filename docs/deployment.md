@@ -19,7 +19,7 @@ The `production` environment contains these secrets:
 - `VPS_KNOWN_HOSTS`: pinned SSH host key entry.
 
 Image publishing and the temporary image pull authentication use the built-in
-`GITHUB_TOKEN`; no long-lived GHCR token is required. Application runtime secrets are required for authentication and SMTP. Keep them
+`GITHUB_TOKEN`; no long-lived GHCR token is required. Application runtime secrets are required for authentication. Keep them
 in `/srv/apps/sopilka/.env` with mode `600`; deployment does not alter that file.
 See the one-time backend rollout instructions below.
 
@@ -65,21 +65,25 @@ Before deploying this revision, an administrator with normal VPS access must:
 2. Replace `/usr/local/sbin/deploy-sopilka` with the updated helper (mode `755`).
 3. Create `/srv/apps/sopilka/.env` from `.env.example`, mode `600`. Set
    `BETTER_AUTH_URL=https://sopilka.kattegatt.org`, a randomly generated
-   `BETTER_AUTH_SECRET` (at least 32 characters), and working SMTP credentials
-   plus `SMTP_FROM`. Port 587 uses STARTTLS; port 465 requires `SMTP_SECURE=true`.
-4. Confirm the sending address/domain is accepted by the SMTP provider, then
-   deploy the immutable image as usual. Verify a real confirmation email and
-   password reset email in addition to the automated health check.
+   `BETTER_AUTH_SECRET` (at least 32 characters).
+4. Deploy the immutable image as usual. Verify registration with a login and
+   password, login, and project synchronization in addition to the automated
+   health check. No SMTP service or email confirmation is required.
 
-The restricted deployment SSH key cannot install files or configure SMTP. Do not
+The restricted deployment SSH key cannot install files or configure runtime secrets. Do not
 broaden that key's permissions. Supply runtime secrets on the VPS only; they are
 never needed by the frontend build or stored in `VITE_*` variables.
 
 The named Docker volume `sopilka-data` persists `/data/sopilka.sqlite` across
 image replacements. SQLite uses WAL. Auth and project schema migrations run before
 the server begins accepting traffic; project schema changes are additive. Logs
-must not contain cookies, passwords or production email links. `/api/health`
+must not contain cookies, passwords or authentication tokens. `/api/health`
 checks the live database as well as the HTTP process.
+
+Passwords are stored as scrypt hashes by Better Auth. Public authentication routes
+accept only login/password registration, login, session checks and logout. Email
+verification and password-reset routes are disabled; automatic password recovery
+is not available in this version.
 
 ## Backups and restore
 

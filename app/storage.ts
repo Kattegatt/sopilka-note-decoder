@@ -4,7 +4,7 @@ import { withProjectDefaults } from "./project";
 import type { ProjectOperation, RemoteProject } from "../shared/sync";
 
 export const GUEST = "guest";
-export interface CachedAccount { id: string; email: string }
+export interface CachedAccount { id: string; login: string }
 export interface LocalProject { owner: string; id: string; project: Project }
 export interface PendingOperation extends ProjectOperation { owner: string; queueId?: number }
 interface SopilkaDatabase extends DBSchema {
@@ -65,7 +65,8 @@ export class LocalStore {
   async setLogoutPending(value: boolean) { await (await this.database).put("metadata", value, "logoutPending"); }
 
   async account(): Promise<CachedAccount | null> {
-    return (await (await this.database).get("metadata", "account") as CachedAccount | undefined) ?? null;
+    const account = await (await this.database).get("metadata", "account") as (CachedAccount & { email?: string }) | undefined;
+    return account ? { id: account.id, login: account.login ?? account.email ?? "" } : null;
   }
 
   async setAccount(account: CachedAccount | null) {

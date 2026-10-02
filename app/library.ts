@@ -156,8 +156,8 @@ export class ProjectLibrary {
         }
         const session = await apiFetch("/api/auth/get-session");
         if (!this.started || generation !== this.generation) return;
-        if (session?.user?.emailVerified) {
-          const account = { id: session.user.id, email: session.user.email };
+        if (session?.user) {
+          const account = { id: session.user.id, login: session.user.username ?? session.user.name };
           const same = this.state.owner === account.id;
           if (!same || (await this.store.list(GUEST)).length) await this.activate(account, true);
           await this.store.setAccount(account);

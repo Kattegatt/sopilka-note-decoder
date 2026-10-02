@@ -4,15 +4,15 @@ import rateLimit from "@fastify/rate-limit";
 import Database from "better-sqlite3";
 import { fromNodeHeaders } from "better-auth/node";
 import { z } from "zod";
-import { createAuth, type AuthMail } from "./auth.js";
+import { createAuth } from "./auth.js";
 import { migrateProjects, ProjectRepository } from "./database.js";
+import { credentialsSchema, registrationSchema } from "../shared/auth.js";
 import { operationSchema } from "../shared/sync.js";
 
 export interface ServerOptions {
   databasePath: string;
   baseURL: string;
   secret: string;
-  sendMail: (mail: AuthMail) => Promise<void>;
   staticRoot?: string;
   logger?: boolean;
 }
@@ -34,7 +34,7 @@ export async function createServer(options: ServerOptions) {
   });
   app.addHook("onClose", async () => { db.close(); });
   try {
-    const auth = await createAuth(db, options.baseURL, options.secret, options.sendMail);
+    const auth = await createAuth(db, options.baseURL, options.secret);
     migrateProjects(db);
     const projects = new ProjectRepository(db);
     await app.register(rateLimit, { max: 300, timeWindow: "1 minute" });
@@ -61,10 +61,29 @@ export async function createServer(options: ServerOptions) {
       bodyLimit: 16 * 1024,
       async handler(request, reply) {
         const url = new URL(request.url, options.baseURL);
+        let body = request.body;
+        if (url.pathname === "/api/auth/register" || url.pathname === "/api/auth/login") {
+          const registration = url.pathname.endsWith("register");
+          if (request.method !== "POST") return reply.code(405).send({ error: "Недозволений метод." });
+          const credentials = (registration ? registrationSchema : credentialsSchema).safeParse(body);
+          if (!credentials.success) return reply.code(400).send({
+            error: "Логін: 3–30 латинських літер, цифр, крапок, дефісів або підкреслень. Пароль: 8–128 символів.",
+          });
+          const { login, password } = credentials.data;
+          url.pathname = registration ? "/api/auth/sign-up/email" : "/api/auth/sign-in/username";
+          // Better Auth requires an email column. This reserved, deterministic identifier is never used for mail.
+          body = registration ? {
+            name: login, username: login, password,
+            email: `${Buffer.from(login).toString("hex")}@accounts.sopilka.invalid`,
+          } : { username: login, password, rememberMe: true };
+        } else if (!["/api/auth/get-session", "/api/auth/sign-out"].includes(url.pathname)) {
+          // Only expose the password/login flow; email, verification and reset endpoints are unavailable.
+          return reply.code(404).send({ error: "Не знайдено." });
+        }
         const response = await auth.handler(new Request(url, {
           method: request.method,
           headers: fromNodeHeaders({ ...request.headers, "x-forwarded-for": request.ip }),
-          ...(request.body ? { body: JSON.stringify(request.body) } : {}),
+          ...(body ? { body: JSON.stringify(body) } : {}),
         }));
         reply.code(response.status);
         response.headers.forEach((value, key) => {
@@ -84,7 +103,6 @@ export async function createServer(options: ServerOptions) {
           headers: fromNodeHeaders({ ...request.headers, "x-forwarded-for": request.ip }), query: { disableCookieCache: true },
         });
         if (!session) return reply.code(401).send({ error: "Потрібен вхід." });
-        if (!session.user.emailVerified) return reply.code(403).send({ error: "Підтвердіть email." });
         request.ownerId = session.user.id;
       });
       protectedApp.get("/api/projects", async (request, reply) => {
