@@ -10,13 +10,8 @@ import {
   normalizeProjectSource,
   renderProjectScore,
 } from "./music";
-import { createProject } from "./project";
-import {
-  deleteProject,
-  listProjects,
-  loadProject,
-  saveProject,
-} from "./storage";
+import { useProjectLibrary } from "./useProjectLibrary";
+import { AccountControls } from "./AccountControls";
 import { ScoreViewer } from "./ScoreViewer";
 import { FingeringDiagram } from "./FingeringDiagram";
 import { usePlayback } from "./usePlayback";
@@ -53,10 +48,7 @@ function sourceTempo(project: Project) {
 }
 
 export function SopilkaApp() {
-  const [project, setProject] = useState<Project>(() =>
-    createProject("Ода до радості"),
-  );
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { project, projects, account, owner, ready, status, message, controller } = useProjectLibrary();
   const [voices, setVoices] = useState<VoiceChoice[]>([]);
   const [rendered, setRendered] = useState<RenderedScore>();
   const [processing, setProcessing] = useState(true);
@@ -67,29 +59,8 @@ export function SopilkaApp() {
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [soundOpen, setSoundOpen] = useState(false);
   const sourceFileRef = useRef<HTMLInputElement>(null);
-
-  const refreshProjects = async () => setProjects(await listProjects());
-
-  useEffect(() => {
-    let active = true;
-    listProjects().then(async (stored) => {
-      if (!active) return;
-      if (stored.length) {
-        setProjects(stored);
-        setProject(stored[0]);
-      } else {
-        const initial = createProject("Ода до радості");
-        await saveProject(initial);
-        if (active) {
-          setProject(initial);
-          setProjects([initial]);
-        }
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const normalizedBoundary = useRef("");
+  const needsNormalization = !project.normalizedMei;
 
   useEffect(() => {
     const narrowLayout = window.matchMedia("(max-width: 1240px)");
@@ -122,14 +93,9 @@ export function SopilkaApp() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const updated = { ...project, updatedAt: new Date().toISOString() };
-      saveProject(updated).then(refreshProjects);
-    }, 650);
-    return () => window.clearTimeout(timer);
-  }, [project]);
-
-  useEffect(() => {
+    if (!ready) return;
+    const boundary = JSON.stringify([owner, project.id, project.source.type, project.source.content]);
+    if (!needsNormalization && normalizedBoundary.current === boundary) return;
     let active = true;
     const timer = window.setTimeout(
       () => {
@@ -146,14 +112,15 @@ export function SopilkaApp() {
               voiceCount,
             }) => {
               if (!active) return;
+              const current = controller.snapshot().project;
               const selected = discovered.some(
-                (voice) => voice.id === project.selectedVoice,
+                (voice) => voice.id === current.selectedVoice,
               )
-                ? project.selectedVoice
+                ? current.selectedVoice
                 : (discovered[0]?.id ?? "1:1");
+              normalizedBoundary.current = boundary;
               setVoices(discovered);
-              setProject((current) => ({
-                ...current,
+              controller.cache(project.id, project.source.content, {
                 source: tempoBpm
                   ? { ...current.source, tempoBpm, trackCount, voiceCount }
                   : current.source,
@@ -161,7 +128,7 @@ export function SopilkaApp() {
                 title: current.title === "Нова мелодія" ? title : current.title,
                 selectedVoice: selected,
                 selectedPart: selected.split(":")[0],
-              }));
+              }, owner);
             },
           )
           .catch((reason: unknown) => {
@@ -183,7 +150,7 @@ export function SopilkaApp() {
     };
     // The source payload is the normalization boundary; other project settings render from normalized MEI.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [project.source.content, project.source.type]);
+  }, [project.id, project.source.content, project.source.type, owner, ready, needsNormalization]);
 
   useEffect(() => {
     if (!project.normalizedMei) return;
@@ -259,7 +226,7 @@ export function SopilkaApp() {
   );
 
   function updateProject(patch: Partial<Project>) {
-    setProject((current) => ({ ...current, ...patch }));
+    controller.edit(patch);
   }
 
   function chooseSoundPreset(preset: BuiltInSoundPreset) {
@@ -278,13 +245,19 @@ export function SopilkaApp() {
     if (!file) return;
     if (file.size > 10 * 1024 * 1024)
       return setError("Файл завеликий. Максимальний розмір — 10 МБ.");
+    const importOwner = owner;
+    const importProjectId = project.id;
+    const applyImport = (patch: Partial<Project>) => {
+      const current = controller.snapshot();
+      if (current.owner === importOwner && current.project.id === importProjectId) controller.edit(patch);
+    };
     const extension = file.name.split(".").pop()?.toLowerCase();
     if (extension === "mxl" || extension === "mid" || extension === "midi") {
       const content = bufferToBase64(await file.arrayBuffer());
       if (extension === "mid" || extension === "midi") {
         try {
           const imported = midiBase64ToMusicXml(content, file.name);
-          updateProject({
+          applyImport({
             title: imported.title,
             source: {
               type: "midi",
@@ -306,7 +279,7 @@ export function SopilkaApp() {
           );
         }
       } else {
-        updateProject({
+        applyImport({
           source: { type: "mxl", content, fileName: file.name },
           normalizedMei: "",
           chordResolutions: {},
@@ -315,7 +288,7 @@ export function SopilkaApp() {
       }
     } else {
       const content = await file.text();
-      updateProject({
+      applyImport({
         source: {
           type: extension === "abc" ? "abc" : "musicxml",
           content,
@@ -330,38 +303,25 @@ export function SopilkaApp() {
   }
 
   async function createNew() {
-    const next = createProject();
-    await saveProject(next);
-    setProject(next);
+    await controller.create();
+    playback.reset();
     setRendered(undefined);
     setSelectedNoteId(undefined);
-    await refreshProjects();
   }
 
   async function openStored(id: string) {
-    const stored = await loadProject(id);
-    if (stored) {
-      playback.reset();
-      setProject(stored);
-      setRendered(undefined);
-      setSelectedNoteId(undefined);
-    }
+    await controller.open(id);
+    playback.reset();
+    setRendered(undefined);
+    setSelectedNoteId(undefined);
   }
 
   async function removeCurrent() {
-    if (
-      !window.confirm(`Видалити проєкт «${project.title}» із цього пристрою?`)
-    )
-      return;
-    await deleteProject(project.id);
-    const remaining = await listProjects();
-    if (remaining.length) setProject(remaining[0]);
-    else {
-      const next = createProject();
-      await saveProject(next);
-      setProject(next);
-    }
-    await refreshProjects();
+    const location = account ? "з акаунта на всіх пристроях" : "із цього пристрою";
+    if (!window.confirm(`Видалити проєкт «${project.title}» ${location}?`)) return;
+    await controller.remove();
+    playback.reset();
+    setSelectedNoteId(undefined);
   }
 
   function resolveChord(chordId: string, noteId: string) {
@@ -447,15 +407,17 @@ export function SopilkaApp() {
           <select
             value={project.id}
             onChange={(event) => openStored(event.target.value)}
-            aria-label="Відкрити локальний проєкт"
+            aria-label="Відкрити проєкт"
+            disabled={!ready}
           >
+            {!projects.length && <option value={project.id}>{project.title}</option>}
             {projects.map((item) => (
               <option key={item.id} value={item.id}>
                 {item.title}
               </option>
             ))}
           </select>
-          <button type="button" onClick={createNew}>
+          <button type="button" disabled={!ready} onClick={createNew}>
             Новий
           </button>
           <button
@@ -463,10 +425,13 @@ export function SopilkaApp() {
             className="icon-danger"
             onClick={removeCurrent}
             aria-label="Видалити проєкт"
+            disabled={!ready || !projects.length}
           >
             ×
           </button>
         </div>
+        <AccountControls account={account} status={status} message={message} ready={ready}
+          onSession={() => controller.authenticated()} onLogout={() => controller.logout()} />
       </header>
 
       {(error || notice) && (
@@ -584,7 +549,7 @@ export function SopilkaApp() {
               </label>
             )}
             <div className="privacy-note">
-              <i /> Ноти не залишають цей пристрій
+              <i /> {account ? "Ноти зберігаються на пристрої та синхронізуються з акаунтом" : "Ноти не залишають цей пристрій"}
             </div>
           </aside>
         )}

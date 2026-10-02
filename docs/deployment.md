@@ -19,9 +19,9 @@ The `production` environment contains these secrets:
 - `VPS_KNOWN_HOSTS`: pinned SSH host key entry.
 
 Image publishing and the temporary image pull authentication use the built-in
-`GITHUB_TOKEN`; no long-lived GHCR token is required. Application runtime secrets
-are not currently required. If they are added later, keep them in
-`/srv/apps/sopilka/.env` with mode `600`; deployment does not alter that file.
+`GITHUB_TOKEN`; no long-lived GHCR token is required. Application runtime secrets are required for authentication and SMTP. Keep them
+in `/srv/apps/sopilka/.env` with mode `600`; deployment does not alter that file.
+See the one-time backend rollout instructions below.
 
 ## Operations
 
@@ -54,3 +54,55 @@ ssh pet-vps 'sudo /usr/local/sbin/deploy-sopilka <previous-40-character-sha> man
 The command pulls and starts that immutable tag, waits for the container health
 check, and verifies the HTTPS endpoint. The previous image remains identifiable
 in the local Docker image cache and GHCR.
+
+## First backend rollout (one-time administrator setup)
+
+The image now runs Fastify for both static files and `/api/*`. Existing deployments
+only pull a new image: they **do not copy** `compose.yml` or the helper scripts.
+Before deploying this revision, an administrator with normal VPS access must:
+
+1. Replace `/srv/apps/sopilka/compose.yml` with this repository's Compose file.
+2. Replace `/usr/local/sbin/deploy-sopilka` with the updated helper (mode `755`).
+3. Create `/srv/apps/sopilka/.env` from `.env.example`, mode `600`. Set
+   `BETTER_AUTH_URL=https://sopilka.kattegatt.org`, a randomly generated
+   `BETTER_AUTH_SECRET` (at least 32 characters), and working SMTP credentials
+   plus `SMTP_FROM`. Port 587 uses STARTTLS; port 465 requires `SMTP_SECURE=true`.
+4. Confirm the sending address/domain is accepted by the SMTP provider, then
+   deploy the immutable image as usual. Verify a real confirmation email and
+   password reset email in addition to the automated health check.
+
+The restricted deployment SSH key cannot install files or configure SMTP. Do not
+broaden that key's permissions. Supply runtime secrets on the VPS only; they are
+never needed by the frontend build or stored in `VITE_*` variables.
+
+The named Docker volume `sopilka-data` persists `/data/sopilka.sqlite` across
+image replacements. SQLite uses WAL. Auth and project schema migrations run before
+the server begins accepting traffic; project schema changes are additive. Logs
+must not contain cookies, passwords or production email links. `/api/health`
+checks the live database as well as the HTTP process.
+
+## Backups and restore
+
+Before subsequent schema changes, and regularly during operation, take a coherent
+SQLite backup (the backup API includes committed WAL data):
+
+```bash
+cd /srv/apps/sopilka
+sudo docker compose --env-file .image exec app node scripts/backup.mjs
+```
+
+Backups are written under `/data/backups/`. Copy them off the VPS; backups in the
+same volume alone do not protect against disk failure. Restrict access: they
+contain private notes and authentication records.
+
+To restore, stop the application, mount `sopilka-data` into a temporary container,
+replace `sopilka.sqlite` with the selected backup, remove any stale
+`sopilka.sqlite-wal` and `sopilka.sqlite-shm`, and ensure the restored file belongs
+to UID/GID `1000:1000`. Start the application and check `/api/health`, login, and
+project retrieval. Do not replace database files while the server is running.
+Never use `docker compose down -v` for an ordinary rollback.
+
+Image rollback does not roll back the database. Keep the same auth secret across
+releases. For a rollback to the original frontend-only image, the administrator
+must also restore the earlier deployment helper, because that image has no
+`/api/health`; retain the data volume for future recovery.

@@ -62,3 +62,10 @@ yarn-error.log*
 /prompts/
 /notes/private/
 *.local.md
+
+# Persistent local backend data and browser test artifacts.
+/data/
+/build/
+/playwright-report/
+/test-results/
+!.env.example

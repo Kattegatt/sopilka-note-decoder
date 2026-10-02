@@ -14,3 +14,11 @@ work
 Dockerfile*
 compose*.yml
 docs
+
+.env*
+data
+build
+playwright-report
+test-results
+.agents
+.codex

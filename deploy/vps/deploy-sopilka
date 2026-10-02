@@ -53,8 +53,14 @@ if [ "${health:-unknown}" != healthy ]; then
   exit 1
 fi
 
-curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 \
-  https://sopilka.kattegatt.org/ >/dev/null
+if ! curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 \
+  https://sopilka.kattegatt.org/api/health >/dev/null; then
+  echo "Public API check failed; restoring the previous image." >&2
+  if [ -f "$app_dir/.image" ]; then
+    docker compose --project-directory "$app_dir" --env-file "$app_dir/.image" up -d --remove-orphans
+  fi
+  exit 1
+fi
 
 if [ -f "$app_dir/.image" ]; then
   cp "$app_dir/.image" "$app_dir/.image.previous"
